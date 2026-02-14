@@ -1,0 +1,140 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+/* iOS Safari specific fixes */
+@supports (-webkit-touch-callout: none) {
+  html {
+    height: -webkit-fill-available;
+  }
+  
+  body {
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: touch;
+    height: 100vh;
+    height: -webkit-fill-available;
+    margin: 0;
+    padding: 0;
+  }
+  
+  #root {
+    height: 100vh;
+    height: -webkit-fill-available;
+  }
+}
+
+/* Disable double-tap zoom */
+* {
+  touch-action: manipulation;
+  overscroll-behavior-x: none;
+}
+#root {
+  height: 100%;
+  min-height: 100%;
+  min-height: -webkit-fill-available;
+  position: relative;
+}
+/* Disable double-tap zoom */
+* {
+  touch-action: manipulation;
+   overscroll-behavior-x: none;
+}
+/* iOS specific fixes */
+html {
+  height: 100%;
+  min-height: 100%;
+  min-height: -webkit-fill-available;
+  position: relative;
+}
+body {
+  touch-action: manipulation;
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+  height: 100%;
+  min-height: 100%;
+  min-height: -webkit-fill-available;
+  overflow: auto;
+  overflow-x: hidden;
+  font-family: "Work Sans", sans-serif;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--white);
+  background-color: #ffffff;
+  margin: 0;
+  padding: 0;
+  position: relative;
+  /* background-image: url("../public/backs/full.svg");
+  background-repeat: no-repeat;
+  background-size: cover; */
+
+}
+
+/* Specific styling when RTL is active */
+[dir="rtl"] {
+  text-align: right;
+}
+
+/* For LTR layouts */
+[dir="ltr"] {
+  text-align: left;
+}
+@keyframes dropUp {
+  0% {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+.safe{
+  padding: 
+      env(safe-area-inset-top, 0px) 
+      env(safe-area-inset-right, 0px) 
+      env(safe-area-inset-bottom, 0px) 
+      env(safe-area-inset-left, 0px);
+          box-sizing: border-box;
+  touch-action: 'manipulation';
+
+
+}
+.reveal-up {
+  opacity: 0; /* Ensure it's initially hidden */
+}
+
+.reveal-up.activation {
+  animation: dropUp 0.5s ease-out forwards;
+}
+.reveal-vertical {
+  transform: translateY(10px);
+  opacity: 0;
+  transition-delay: 2s;
+  transition: opacity 0.8s ease-out, transform .5s ease-out;
+}
+
+.reveal-vertical.activation {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.reveal-horizontal-left {
+  opacity: 0;
+  transition-delay: 1s;
+  transition: opacity 0.8s ease-out,;
+}
+
+.reveal-horizontal-left.activation {
+  opacity: 1;
+
+}
+
+.reveal-horizontal-right {
+  transform: translateX(50px);
+  opacity: 0;
+  transition: opacity 0.8s ease-out, transform 1s ease-out;
+}
+
+.reveal-horizontal-right.activation {
+  transform: translateX(0);
+  opacity: 1;
+}

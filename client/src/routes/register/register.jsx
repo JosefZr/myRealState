@@ -1,8 +1,6 @@
 import "./register.scss";
 import { Link, useNavigate } from "react-router-dom";
-import axios from "axios";
 import { useState } from "react";
-import apiRequest from "../../lib/apiRequest";
 
 function Register() {
   const [error, setError] = useState("");
@@ -16,20 +14,41 @@ function Register() {
     setIsLoading(true);
     const formData = new FormData(e.target);
 
-    const username = formData.get("username");
+    const firstName = formData.get("firstName");
+    const lastName = formData.get("lastName");
     const email = formData.get("email");
     const password = formData.get("password");
 
     try {
-      const res = await apiRequest.post("/auth/register", {
-        username,
-        email,
-        password,
-      });
+      const response = await fetch(
+        `${import.meta.env.VITE_SERVER_API}/api/v1/auth/register`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ 
+            userData: {
+              firstName,
+              lastName,
+              email,
+              password,
+            }
+           }),
+        }
+      );
 
+      if (!response.ok) {
+        const errText = await response.text();
+        console.error("Signup error:", errText);
+        return;
+      }
+
+      const data = await response.json();
+      console.log("Free trial signup success:", data);
       navigate("/login");
-    } catch (err) {
-      setError(err.response.data.message);
+    } catch (error) {
+      console.error("Error submitting signup:", error);
     } finally {
       setIsLoading(false);
     }
@@ -39,7 +58,8 @@ function Register() {
       <div className="formContainer">
         <form onSubmit={handleSubmit}>
           <h1>Create an Account</h1>
-          <input name="username" type="text" placeholder="Username" />
+          <input name="firstName" type="text" placeholder="first Name" />
+          <input name="lastName" type="text" placeholder="last Name" />
           <input name="email" type="text" placeholder="Email" />
           <input name="password" type="password" placeholder="Password" />
           <button disabled={isLoading}>Register</button>

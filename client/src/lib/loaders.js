@@ -1,21 +1,33 @@
 import { defer } from "react-router-dom";
 import apiRequest from "./apiRequest";
 
-export const singlePageLoader = async ({ request, params }) => {
-  const res = await apiRequest("/posts/" + params.id);
-  return res.data;
-};
-export const listPageLoader = async ({ request, params }) => {
-  const query = request.url.split("?")[1];
-  const postPromise = apiRequest("/posts?" + query);
+// List page loader - fetch all posts with query params
+export const listPageLoader = async ({ request }) => {
+  const url = new URL(request.url);
+  const query = url.searchParams.toString();
+  
+  const postPromise = apiRequest.get(`/posts${query ? `?${query}` : ""}`);
+  
   return defer({
     postResponse: postPromise,
   });
 };
 
+// Single page loader - fetch single post
+export const singlePageLoader = async ({ params }) => {
+  const postPromise = apiRequest.get(`/posts/${params.id}`);
+  
+  return defer({
+    postResponse: postPromise,
+  });
+};
+
+// Profile page loader - fetch user's posts and saved posts
 export const profilePageLoader = async () => {
-  const postPromise = apiRequest("/users/profilePosts");
-  const chatPromise = apiRequest("/chats");
+  // Use apiRequest which already includes the token from interceptor
+  const postPromise = apiRequest.get("/users/profilePosts");
+  const chatPromise = apiRequest.get("/chats").catch(() => ({ data: [] }));
+  
   return defer({
     postResponse: postPromise,
     chatResponse: chatPromise,
