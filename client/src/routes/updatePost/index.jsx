@@ -1,39 +1,38 @@
 import { useState, useEffect } from "react";
-import "../newPostPage/newPostPage";
-import ReactQuill from "react-quill";
-import "react-quill/dist/quill.snow.css";
-import apiRequest from "../../lib/apiRequest";
-import UploadWidget from "../../components/uploadWidget/UploadWidget";
 import { useNavigate, useParams } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ImagePlus, X, ArrowLeft } from "lucide-react";
+import UploadWidget from "@/components/uploadWidget/UploadWidget";
 
-function UpdatePostPage() {
+const UpdateProperty = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-
-  const [value, setValue] = useState("");
-  const [images, setImages] = useState([]);
-  const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
-  const [postType, setPostType] = useState("rent");
-  
+  const [type, setType] = useState("rent");
+  const [propertyType, setPropertyType] = useState("apartment");
+  const [rentalPeriod, setRentalPeriod] = useState("month");
+  const [petPolicy, setPetPolicy] = useState("allowed");
+  const [utilities, setUtilities] = useState("tenant");
+  const [images, setImages] = useState([]);
+  const [error, setError] = useState("");
+
   // Form state
   const [formData, setFormData] = useState({
     title: "",
+    description: "",
     price: "",
     address: "",
-    desc: "",
     city: "",
-    bedroom: "",
-    bathroom: "",
+    bedrooms: "",
+    bathrooms: "",
     latitude: "",
     longitude: "",
-    type: "rent",
-    property: "apartment",
-    rentalPeriod: "",
     rentalDuration: "",
-    utilities: "owner",
-    pet: "allowed",
     income: "",
     size: "",
     school: "",
@@ -50,46 +49,46 @@ function UpdatePostPage() {
           `${import.meta.env.VITE_SERVER_API}/api/v1/posts/${id}`
         );
         const data = await response.json();
-        console.log("Fetched post data:", data);
+        
         if (data.success) {
           const post = data.data;
           
           // Set form data
           setFormData({
             title: post.title || "",
+            description: post.description || "",
             price: post.price || "",
             address: post.address || "",
-            desc: post?.description || "",
             city: post.city || "",
-            bedroom: post.bedroom || "",
-            bathroom: post.bathroom || "",
+            bedrooms: post.bedroom || "",
+            bathrooms: post.bathroom || "",
             latitude: post.latitude || "",
             longitude: post.longitude || "",
-            type: post.type || "rent",
-            property: post.property || "apartment",
-            rentalPeriod: post.rentalPeriod || "",
             rentalDuration: post.rentalDuration || "",
-            utilities: post.postDetail?.utilities || "owner",
-            pet: post.postDetail?.pet || "allowed",
-            income: post.postDetail?.income || "",
-            size: post.postDetail?.size || "",
-            school: post.postDetail?.school || "",
-            bus: post.postDetail?.bus || "",
-            restaurant: post.postDetail?.restaurant || "",
-          });          
+            income: post.income || "",
+            size: post.size || "",
+            school: post.school || "",
+            bus: post.bus || "",
+            restaurant: post.restaurant || "",
+          });
+
+          // Set select values
+          setType(post.type || "rent");
+          setPropertyType(post.property || "apartment");
+          setRentalPeriod(post.rentalPeriod || "month");
+          setPetPolicy(post.pet || "allowed");
+          setUtilities(post.utilities || "tenant");
+          
           // Set images
           setImages(post.images || []);
-          
-          // Set post type
-          setPostType(post.type || "rent");
         } else {
           setError("Post not found");
-          setTimeout(() => navigate("/profile"), 2000);
+          setTimeout(() => navigate("/dashboard"), 2000);
         }
       } catch (err) {
         console.error("Error fetching post:", err);
         setError("Failed to load post data");
-        setTimeout(() => navigate("/profile"), 2000);
+        setTimeout(() => navigate("/dashboard"), 2000);
       } finally {
         setIsFetching(false);
       }
@@ -104,10 +103,6 @@ function UpdatePostPage() {
       ...prev,
       [name]: value,
     }));
-    
-    if (name === "type") {
-      setPostType(value);
-    }
   };
 
   const handleSubmit = async (e) => {
@@ -116,46 +111,39 @@ function UpdatePostPage() {
     setError("");
 
     // Validation for rental fields
-    if (formData.type === "rent") {
-      if (!formData.rentalPeriod) {
-        setError("Please select a rental period");
-        setIsLoading(false);
-        return;
-      }
-      if (!formData.rentalDuration || parseInt(formData.rentalDuration) < 1) {
-        setError("Please enter a valid rental duration (minimum 1)");
-        setIsLoading(false);
-        return;
-      }
+    if (type === "rent" && !rentalPeriod) {
+      setError("Please select a rental period");
+      setIsLoading(false);
+      return;
     }
 
     try {
       const postData = {
         title: formData.title,
+        description: formData.description,
         price: parseInt(formData.price),
         address: formData.address,
         city: formData.city,
-        bedroom: parseInt(formData.bedroom),
-        bathroom: parseInt(formData.bathroom),
-        type: formData.type,
-        property: formData.property,
-        latitude: formData.latitude,
-        longitude: formData.longitude,
+        bedroom: parseInt(formData.bedrooms),
+        bathroom: parseInt(formData.bathrooms),
+        type: type,
+        property: propertyType,
+        latitude: formData.latitude || "0",
+        longitude: formData.longitude || "0",
         images: images,
-        description: formData.desc,
-        utilities: formData.utilities,
-        pet: formData.pet,
-        income: formData.income,
-        size: parseInt(formData.size),
-        school: parseInt(formData.school),
-        bus: parseInt(formData.bus),
-        restaurant: parseInt(formData.restaurant),
+        utilities: utilities,
+        pet: petPolicy,
+        income: formData.income || "",
+        size: parseInt(formData.size) || 0,
+        school: parseInt(formData.school) || 0,
+        bus: parseInt(formData.bus) || 0,
+        restaurant: parseInt(formData.restaurant) || 0,
       };
 
       // Add rental-specific fields only if type is rent
-      if (formData.type === "rent") {
-        postData.rentalPeriod = formData.rentalPeriod;
-        postData.rentalDuration = parseInt(formData.rentalDuration);
+      if (type === "rent") {
+        postData.rentalPeriod = rentalPeriod;
+        postData.rentalDuration = parseInt(formData.rentalDuration) || 1;
       }
 
       const response = await fetch(
@@ -173,7 +161,7 @@ function UpdatePostPage() {
       const res = await response.json();
 
       if (res.success) {
-        navigate("/" + id);
+        navigate("/property/" + id);
       } else {
         setError(res.error || "Failed to update post");
       }
@@ -191,281 +179,409 @@ function UpdatePostPage() {
 
   if (isFetching) {
     return (
-      <div className="newPostPage">
-        <div className="formContainer">
-          <div className="wrapper" style={{ textAlign: "center", padding: "50px" }}>
-            <div className="w-12 h-12 border-3 border-stone-200 border-t-amber-700 rounded-full animate-spin mx-auto mb-4"></div>
-            <p>Loading post data...</p>
-          </div>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-3 border-muted border-t-secondary rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-muted-foreground font-body">Loading property data...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="newPostPage">
-      <div className="formContainer">
-        <h1>Update Post</h1>
-        <div className="wrapper">
-          <form onSubmit={handleSubmit}>
-            <div className="item">
-              <label htmlFor="title">Title</label>
-              <input
-                id="title"
-                name="title"
-                type="text"
-                value={formData.title}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
-            <div className="item">
-              <label htmlFor="price">Price</label>
-              <input
-                id="price"
-                name="price"
-                type="number"
-                min="0"
-                value={formData.price}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
-            <div className="item">
-              <label htmlFor="address">Address</label>
-              <input
-                id="address"
-                name="address"
-                type="text"
-                value={formData.address}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
-            <div className="item description">
-              <label htmlFor="desc">Description</label>
-              <ReactQuill theme="snow" onChange={setValue} value={value} />
-            </div>
-            <div className="item">
-              <label htmlFor="city">City</label>
-              <input
-                id="city"
-                name="city"
-                type="text"
-                value={formData.city}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
-            <div className="item">
-              <label htmlFor="bedroom">Bedroom Number</label>
-              <input
-                min={0}
-                id="bedroom"
-                name="bedroom"
-                type="number"
-                value={formData.bedroom}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
-            <div className="item">
-              <label htmlFor="bathroom">Bathroom Number</label>
-              <input
-                min={0}
-                id="bathroom"
-                name="bathroom"
-                type="number"
-                value={formData.bathroom}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
-            <div className="item">
-              <label htmlFor="latitude">Latitude</label>
-              <input
-                id="latitude"
-                name="latitude"
-                type="text"
-                value={formData.latitude}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
-            <div className="item">
-              <label htmlFor="longitude">Longitude</label>
-              <input
-                id="longitude"
-                name="longitude"
-                type="text"
-                value={formData.longitude}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
-            <div className="item">
-              <label htmlFor="type">Type</label>
-              <select
-                name="type"
-                value={formData.type}
-                onChange={handleInputChange}
-              >
-                <option value="rent">Rent</option>
-                <option value="sale">Sale</option>
-              </select>
-            </div>
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto px-4 lg:px-8 py-10">
+        <div className="max-w-3xl mx-auto">
+          <div className="mb-8">
+            <button
+              onClick={() => navigate(-1)}
+              className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-4 font-body text-sm transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" /> Back
+            </button>
+            <h1 className="font-display text-3xl font-bold text-foreground mb-2">Update Your Property</h1>
+            <p className="text-muted-foreground font-body">Edit the details of your property listing</p>
+          </div>
 
-            {/* Rental-specific fields - only show if type is rent */}
-            {postType === "rent" && (
-              <>
-                <div className="item">
-                  <label htmlFor="rentalPeriod">Rental Period</label>
-                  <select
-                    name="rentalPeriod"
-                    value={formData.rentalPeriod}
-                    onChange={handleInputChange}
-                    required
-                  >
-                    <option value="">Select period</option>
-                    <option value="day">Per Day</option>
-                    <option value="week">Per Week</option>
-                    <option value="month">Per Month</option>
-                    <option value="year">Per Year</option>
-                  </select>
+          <form onSubmit={handleSubmit} className="space-y-8">
+            {/* Basic Info */}
+            <div className="bg-card rounded-xl p-6 shadow-card space-y-5">
+              <h2 className="font-display text-xl font-bold text-foreground">Basic Information</h2>
+
+              <div className="space-y-2">
+                <Label htmlFor="title" className="font-body">Title</Label>
+                <Input 
+                  id="title"
+                  name="title"
+                  value={formData.title}
+                  onChange={handleInputChange}
+                  placeholder="e.g., Modern 2BR Apartment in Downtown" 
+                  className="h-12 font-body" 
+                  required 
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="description" className="font-body">Description</Label>
+                <Textarea 
+                  id="description"
+                  name="description"
+                  value={formData.description}
+                  onChange={handleInputChange}
+                  placeholder="Describe your property..." 
+                  className="min-h-[120px] font-body" 
+                  required 
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="font-body">Listing Type</Label>
+                  <Select value={type} onValueChange={setType}>
+                    <SelectTrigger className="h-12 font-body">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="rent">For Rent</SelectItem>
+                      <SelectItem value="sale">For Sale</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-                <div className="item">
-                  <label htmlFor="rentalDuration">
-                    Rental Duration (number of periods)
-                  </label>
-                  <input
-                    id="rentalDuration"
-                    name="rentalDuration"
-                    type="number"
-                    min="1"
-                    value={formData.rentalDuration}
+                <div className="space-y-2">
+                  <Label className="font-body">Property Type</Label>
+                  <Select value={propertyType} onValueChange={setPropertyType}>
+                    <SelectTrigger className="h-12 font-body">
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="apartment">Apartment</SelectItem>
+                      <SelectItem value="house">House</SelectItem>
+                      <SelectItem value="condo">Condo</SelectItem>
+                      <SelectItem value="villa">Villa</SelectItem>
+                      <SelectItem value="land">Land</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="price" className="font-body">Price ($)</Label>
+                  <Input 
+                    id="price"
+                    name="price"
+                    type="number" 
+                    min="0" 
+                    value={formData.price}
                     onChange={handleInputChange}
-                    placeholder="e.g., 6 for 6 months"
-                    required
+                    placeholder="0" 
+                    className="h-12 font-body" 
+                    required 
                   />
                 </div>
-              </>
+                {type === "rent" && (
+                  <div className="space-y-2">
+                    <Label className="font-body">Rental Period</Label>
+                    <Select value={rentalPeriod} onValueChange={setRentalPeriod}>
+                      <SelectTrigger className="h-12 font-body">
+                        <SelectValue placeholder="Select period" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="day">Per Day</SelectItem>
+                        <SelectItem value="week">Per Week</SelectItem>
+                        <SelectItem value="month">Per Month</SelectItem>
+                        <SelectItem value="year">Per Year</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
+
+              {type === "rent" && (
+                <div className="space-y-2">
+                  <Label htmlFor="rentalDuration" className="font-body">Rental Duration (number of periods)</Label>
+                  <Input 
+                    id="rentalDuration"
+                    name="rentalDuration"
+                    type="number" 
+                    min="1" 
+                    value={formData.rentalDuration}
+                    onChange={handleInputChange}
+                    placeholder="e.g., 6 for 6 months" 
+                    className="h-12 font-body" 
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Details */}
+            <div className="bg-card rounded-xl p-6 shadow-card space-y-5">
+              <h2 className="font-display text-xl font-bold text-foreground">Property Details</h2>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="bedrooms" className="font-body">Bedrooms</Label>
+                  <Input 
+                    id="bedrooms"
+                    name="bedrooms"
+                    type="number" 
+                    min="0" 
+                    value={formData.bedrooms}
+                    onChange={handleInputChange}
+                    placeholder="0" 
+                    className="h-12 font-body" 
+                    required 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="bathrooms" className="font-body">Bathrooms</Label>
+                  <Input 
+                    id="bathrooms"
+                    name="bathrooms"
+                    type="number" 
+                    min="0" 
+                    value={formData.bathrooms}
+                    onChange={handleInputChange}
+                    placeholder="0" 
+                    className="h-12 font-body" 
+                    required 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="size" className="font-body">Size (sqft)</Label>
+                  <Input 
+                    id="size"
+                    name="size"
+                    type="number" 
+                    min="0" 
+                    value={formData.size}
+                    onChange={handleInputChange}
+                    placeholder="0" 
+                    className="h-12 font-body" 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="income" className="font-body">Income Policy</Label>
+                  <Input 
+                    id="income"
+                    name="income"
+                    value={formData.income}
+                    onChange={handleInputChange}
+                    placeholder="e.g., 3x rent" 
+                    className="h-12 font-body" 
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="font-body">Pet Policy</Label>
+                  <Select value={petPolicy} onValueChange={setPetPolicy}>
+                    <SelectTrigger className="h-12 font-body">
+                      <SelectValue placeholder="Select" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="allowed">Allowed</SelectItem>
+                      <SelectItem value="not-allowed">Not Allowed</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="font-body">Utilities</Label>
+                  <Select value={utilities} onValueChange={setUtilities}>
+                    <SelectTrigger className="h-12 font-body">
+                      <SelectValue placeholder="Select" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="owner">Owner Responsible</SelectItem>
+                      <SelectItem value="tenant">Tenant Responsible</SelectItem>
+                      <SelectItem value="shared">Shared</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
+            {/* Location */}
+            <div className="bg-card rounded-xl p-6 shadow-card space-y-5">
+              <h2 className="font-display text-xl font-bold text-foreground">Location</h2>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="address" className="font-body">Address</Label>
+                  <Input 
+                    id="address"
+                    name="address"
+                    value={formData.address}
+                    onChange={handleInputChange}
+                    placeholder="Street address" 
+                    className="h-12 font-body" 
+                    required 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="city" className="font-body">City</Label>
+                  <Input 
+                    id="city"
+                    name="city"
+                    value={formData.city}
+                    onChange={handleInputChange}
+                    placeholder="City" 
+                    className="h-12 font-body" 
+                    required 
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="latitude" className="font-body">Latitude</Label>
+                  <Input 
+                    id="latitude"
+                    name="latitude"
+                    value={formData.latitude}
+                    onChange={handleInputChange}
+                    placeholder="e.g., 40.7128" 
+                    className="h-12 font-body" 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="longitude" className="font-body">Longitude</Label>
+                  <Input 
+                    id="longitude"
+                    name="longitude"
+                    value={formData.longitude}
+                    onChange={handleInputChange}
+                    placeholder="e.g., -74.0060" 
+                    className="h-12 font-body" 
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="school" className="font-body">School (km)</Label>
+                  <Input 
+                    id="school"
+                    name="school"
+                    type="number" 
+                    min="0" 
+                    value={formData.school}
+                    onChange={handleInputChange}
+                    placeholder="0" 
+                    className="h-12 font-body" 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="bus" className="font-body">Bus Stop (km)</Label>
+                  <Input 
+                    id="bus"
+                    name="bus"
+                    type="number" 
+                    min="0" 
+                    value={formData.bus}
+                    onChange={handleInputChange}
+                    placeholder="0" 
+                    className="h-12 font-body" 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="restaurant" className="font-body">Restaurant (km)</Label>
+                  <Input 
+                    id="restaurant"
+                    name="restaurant"
+                    type="number" 
+                    min="0" 
+                    value={formData.restaurant}
+                    onChange={handleInputChange}
+                    placeholder="0" 
+                    className="h-12 font-body" 
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Images with Cloudinary Upload Widget */}
+            <div className="bg-card rounded-xl p-6 shadow-card space-y-5">
+              <h2 className="font-display text-xl font-bold text-foreground">Photos</h2>
+              
+              {images.length === 0 ? (
+                <div className="border-2 border-dashed border-border rounded-xl p-10 text-center">
+                  <ImagePlus className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+                  <p className="text-muted-foreground font-body text-sm mb-4">Upload images for your property</p>
+                  <UploadWidget
+                    uwConfig={{
+                      multiple: true,
+                      cloudName: "lamadev",
+                      uploadPreset: "estate",
+                      folder: "posts",
+                    }}
+                    setState={setImages}
+                  />
+                </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {images.map((img, index) => (
+                      <div key={index} className="relative group">
+                        <img 
+                          src={img} 
+                          alt={`Upload ${index + 1}`} 
+                          className="w-full h-32 object-cover rounded-lg border border-border" 
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setImages(images.filter((_, i) => i !== index))}
+                          className="absolute top-2 right-2 bg-destructive text-destructive-foreground rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex items-center justify-between pt-4 border-t border-border">
+                    <p className="text-sm text-muted-foreground font-body">
+                      {images.length} image{images.length !== 1 ? 's' : ''} uploaded
+                    </p>
+                    <UploadWidget
+                      uwConfig={{
+                        multiple: true,
+                        cloudName: "lamadev",
+                        uploadPreset: "estate",
+                        folder: "posts",
+                      }}
+                      setState={setImages}
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Error Display */}
+            {error && (
+              <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/20">
+                <p className="text-destructive text-sm font-body">{error}</p>
+              </div>
             )}
 
-            <div className="item">
-              <label htmlFor="property">Property</label>
-              <select
-                name="property"
-                value={formData.property}
-                onChange={handleInputChange}
+            {/* Submit */}
+            <div className="flex gap-4">
+              <Button type="button" variant="outline" className="flex-1 h-12" onClick={() => navigate(-1)}>
+                Cancel
+              </Button>
+              <Button 
+                type="submit" 
+                disabled={isLoading} 
+                className="flex-1 h-12 bg-gradient-amber text-secondary-foreground font-semibold shadow-amber hover:opacity-90"
               >
-                <option value="apartment">Apartment</option>
-                <option value="house">House</option>
-                <option value="condo">Condo</option>
-                <option value="land">Land</option>
-              </select>
+                {isLoading ? "Updating..." : "Update Listing"}
+              </Button>
             </div>
-
-            <div className="item">
-              <label htmlFor="utilities">Utilities Policy</label>
-              <select
-                name="utilities"
-                value={formData.utilities}
-                onChange={handleInputChange}
-              >
-                <option value="owner">Owner is responsible</option>
-                <option value="tenant">Tenant is responsible</option>
-                <option value="shared">Shared</option>
-              </select>
-            </div>
-            <div className="item">
-              <label htmlFor="pet">Pet Policy</label>
-              <select
-                name="pet"
-                value={formData.pet}
-                onChange={handleInputChange}
-              >
-                <option value="allowed">Allowed</option>
-                <option value="not-allowed">Not Allowed</option>
-              </select>
-            </div>
-            <div className="item">
-              <label htmlFor="income">Income Policy</label>
-              <input
-                id="income"
-                name="income"
-                type="text"
-                value={formData.income}
-                onChange={handleInputChange}
-                placeholder="Income Policy"
-              />
-            </div>
-            <div className="item">
-              <label htmlFor="size">Total Size (sqft)</label>
-              <input
-                min={0}
-                id="size"
-                name="size"
-                type="number"
-                value={formData.size}
-                onChange={handleInputChange}
-              />
-            </div>
-            <div className="item">
-              <label htmlFor="school">School Distance (km)</label>
-              <input
-                min={0}
-                id="school"
-                name="school"
-                type="number"
-                value={formData.school}
-                onChange={handleInputChange}
-              />
-            </div>
-            <div className="item">
-              <label htmlFor="bus">Bus Distance (km)</label>
-              <input
-                min={0}
-                id="bus"
-                name="bus"
-                type="number"
-                value={formData.bus}
-                onChange={handleInputChange}
-              />
-            </div>
-            <div className="item">
-              <label htmlFor="restaurant">Restaurant Distance (km)</label>
-              <input
-                min={0}
-                id="restaurant"
-                name="restaurant"
-                type="number"
-                value={formData.restaurant}
-                onChange={handleInputChange}
-              />
-            </div>
-            <button className="sendButton" disabled={isLoading}>
-              {isLoading ? "Updating..." : "Update Post"}
-            </button>
-            {error && <span className="error">{error}</span>}
           </form>
         </div>
       </div>
-      <div className="sideContainer">
-        {images.map((image, index) => (
-          <img src={image} key={index} alt="" />
-        ))}
-        <UploadWidget
-          uwConfig={{
-            multiple: true,
-            cloudName: "lamadev",
-            uploadPreset: "estate",
-            folder: "posts",
-          }}
-          setState={setImages}
-        />
-      </div>
     </div>
   );
-}
+};
 
-export default UpdatePostPage;
+export default UpdateProperty;

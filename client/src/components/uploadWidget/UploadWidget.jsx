@@ -1,17 +1,17 @@
+// components/uploadWidget/UploadWidget.jsx
 import { createContext, useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Upload } from "lucide-react";
 
-// Create a context to manage the script loading state
 const CloudinaryScriptContext = createContext();
 
-function UploadWidget({ uwConfig, setPublicId, setState }) {
+function UploadWidget({ uwConfig, setState }) {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    // Check if the script is already loaded
     if (!loaded) {
       const uwScript = document.getElementById("uw");
       if (!uwScript) {
-        // If not loaded, create and load the script
         const script = document.createElement("script");
         script.setAttribute("async", "");
         script.setAttribute("id", "uw");
@@ -19,7 +19,6 @@ function UploadWidget({ uwConfig, setPublicId, setState }) {
         script.addEventListener("load", () => setLoaded(true));
         document.body.appendChild(script);
       } else {
-        // If already loaded, update the state
         setLoaded(true);
       }
     }
@@ -37,25 +36,21 @@ function UploadWidget({ uwConfig, setPublicId, setState }) {
         }
       );
 
-      document.getElementById("upload_widget").addEventListener(
-        "click",
-        function () {
-          myWidget.open();
-        },
-        false
-      );
+      myWidget.open();
     }
   };
 
   return (
     <CloudinaryScriptContext.Provider value={{ loaded }}>
-      <button
-        id="upload_widget"
-        className="cloudinary-button"
+      <Button
+        type="button"
+        variant="outline"
         onClick={initializeCloudinaryWidget}
+        className="h-10"
       >
-        Upload
-      </button>
+        <Upload className="w-4 h-4 mr-2" />
+        Upload Images
+      </Button>
     </CloudinaryScriptContext.Provider>
   );
 }
